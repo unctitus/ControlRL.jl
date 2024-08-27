@@ -1,5 +1,6 @@
 module ControlRL
 
-# Write your package code here.
+export sim, sim!, make_x0
+include("sim.jl")
 
 end

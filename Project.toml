@@ -3,11 +3,11 @@ uuid = "893554ca-33fa-4dae-9642-08cc5f7da628"
 authors = ["Shengjie Xu <shengjiex98@gmail.com> and contributors"]
 version = "1.0.0-DEV"
 
+[deps]
+ControlBenchmarks = "fae2e0ce-fbc2-4985-89d7-921c1ae7f515"
+ControlSystemsBase = "aaaaaaaa-a6ca-5380-bf3e-84a91bcd477e"
+ControlTimingSafety = "3a76c758-31f1-42cb-b697-12fe755e3b12"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
 [compat]
-julia = "1.6.7"
-
-[extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test"]
+julia = "1.9"
