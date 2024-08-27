@@ -1,9 +1,18 @@
-using ControlBenchmarks: benchmarks
-using ControlSystemsBase: lqr, c2d, Discrete
+using ControlSystemsBase: lqr, c2d, Discrete, ss
 using LinearAlgebra: I
 
 const P = 0.02
-const SYS = c2d(benchmarks[:F1], P)
+const SYS = let 
+    v = 6.5
+    L = 0.3302
+    d = 1.5
+    A = [0 v ; 0 0]
+    B = [0; v/L]
+    C = [1 0]
+    D = 0
+
+    c2d(ss(A, B, C, D), P)
+end
 const K = lqr(Discrete, SYS.A, SYS.B, I, I)
 
 function sim(x::Vector{<:Real}, hit::Bool)

@@ -4,7 +4,6 @@ authors = ["Shengjie Xu <shengjiex98@gmail.com> and contributors"]
 version = "1.0.0-DEV"
 
 [deps]
-ControlBenchmarks = "fae2e0ce-fbc2-4985-89d7-921c1ae7f515"
 ControlSystemsBase = "aaaaaaaa-a6ca-5380-bf3e-84a91bcd477e"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
