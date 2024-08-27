@@ -6,7 +6,6 @@ version = "1.0.0-DEV"
 [deps]
 ControlBenchmarks = "fae2e0ce-fbc2-4985-89d7-921c1ae7f515"
 ControlSystemsBase = "aaaaaaaa-a6ca-5380-bf3e-84a91bcd477e"
-ControlTimingSafety = "3a76c758-31f1-42cb-b697-12fe755e3b12"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [compat]
