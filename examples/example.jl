@@ -56,6 +56,7 @@ let
 	end
 	
 	@info stack(x)
+	@info [norm(xi) for xi in x] |> maximum
 	plot(0:100, stack(x)')
 end
 
