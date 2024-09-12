@@ -34,7 +34,7 @@ end
 
 Simulate the plant's dynamics for one step as in `sim()`, but *updates* the value in `x` in-place.
 """
-function sim!(x::Vector{<:Real}, hit::Bool)
+function sim!(x::Vector{<:Real}, hit::Bool)::Vector{Float64}
     x .= sim(x, hit)
 end
 
@@ -43,6 +43,6 @@ end
 
 A convenience function that returns an initial state with the correct dimensions for the plant.
 """
-function make_x0()
+function make_x0()::Vector{Float64}
     return repeat([1.], SYS.nx)
 end
