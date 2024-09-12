@@ -36,4 +36,5 @@ julia> using Pluto; Pluto.run()
 To launch the Pluto notebook.
 
 ### Use the example notebook
-In the newly opened browser tab (Pluto should automatically open if for you; if not, copy and paste the URL from the terminal to your favorite browser) you should see the welcome page of Pluto. In "Open a notebook", select "examples/example.jl". The rest of the work will be done over there. Have fun!
+Pluto should automatically open a new broswer tab for you; if it didn't, copy and paste the URL from the terminal to your favorite browser.
+You should see the welcome page of Pluto. In "Open a notebook", select `examples/example.jl`. The rest of the work will be done over there. Have fun!
