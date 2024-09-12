@@ -11,10 +11,11 @@ Follow the instructions from [julialang.org](https://julialang.org/downloads/). 
 curl -fsSL https://install.julialang.org | sh
 ```
 
-For Windows, you can either install it through Microsoft Store, or use the Linux instruction above with [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install).
+For Windows, you can either install it through Microsoft Store
 ```
 winget install julia -s msstore
 ```
+or use the Linux instructions above with [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 ### Set up Julia environment
 Once Julia is installed, type `julia` in terminal to open the Julia REPL. You should see something like 
