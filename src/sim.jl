@@ -1,48 +1,83 @@
-using ControlSystemsBase: lqr, c2d, Discrete, ss
-using LinearAlgebra: I
+import Base: step
+using ControlSystemsBase: lqr, c2d, ss, StateSpace, Discrete
+using LinearAlgebra: I, norm
 
-const P = 0.02
-const SYS = let 
-    v = 6.5
-    L = 0.3302
-    d = 1.5
-    A = [0 v ; 0 0]
-    B = [0; v/L]
-    C = [1 0]
-    D = 0
-
-    c2d(ss(A, B, C, D), P)
+mutable struct Environment
+    sys::StateSpace{<:Discrete}
+    K::Matrix{Float64}
+    state::Vector{Float64}
+    state_ideal::Vector{Float64}
 end
-const K = lqr(Discrete, SYS.A, SYS.B, I, I)
 
 """
-    sim(x, hit)
+    Environment(sys)
 
-Simulate the plant's dynamics for one step, according to whether the deadline is met (`hit=true`) or missed (`hit=false`)
+Constructor for `Environment` with the given system `sys`.
 """
-function sim(x::Vector{<:Real}, hit::Bool)::Vector{Float64}
-    length(x) == SYS.nx || error("Dimensions of the state `x` must match dimensions of the system")
-    if hit
-        return SYS.A * x - SYS.B * K * x
+function Environment(sys::StateSpace{<:Discrete})
+    return Environment(sys, lqr(Discrete, sys.A, sys.B, I, I), make_x0(sys), make_x0(sys))
+end
+
+"""
+    step(env, action)
+
+Simulate the plant's dynamics for one step, according to the action `action` (true for hitting the deadline, false for missing it).
+"""
+function step(env::Environment, action::Bool)
+    env.state = if action
+        env.sys.A * env.state - env.sys.B * env.K * env.state
     else
-        return SYS.A * x
+        env.sys.A * env.state
     end
+    env.state_ideal = env.sys.A * env.state - env.sys.B * env.K * env.state
+
+    return state(env), reward(env)
 end
 
 """
-    sim!(x, hit)
+    sim(env, π, H)
 
-Simulate the plant's dynamics for one step as in `sim()`, but *updates* the value in `x` in-place.
+Simulate the environment for `H` steps using policy `π`.
+Returns two vectors containing the states and rewards for each step.
 """
-function sim!(x::Vector{<:Real}, hit::Bool)::Vector{Float64}
-    x .= sim(x, hit)
+function sim(env::Environment, π::Function, H::Int)
+    states = Vector{Vector{Float64}}(undef, H + 1)
+    rewards = Vector{Float64}(undef, H + 1)
+    
+    states[1] = state(env)
+    rewards[1] = reward(env)
+    
+    for t in 1:H
+        action = π(states[t], rewards[t])
+        states[t + 1], rewards[t + 1] = step(env, action)
+    end
+    
+    return stack(states), rewards
 end
 
 """
-    make_x0()
+    state(env)
+
+Return the current state of the environment.
+"""
+function state(env::Environment)
+    return env.state
+end
+
+"""
+    reward(env)
+
+Calculate the reward for the given environment at the current step.
+"""
+function reward(env::Environment)
+    return -norm(env.state - env.state_ideal)
+end
+
+"""
+    make_x0(sys)
 
 A convenience function that returns an initial state with the correct dimensions for the plant.
 """
-function make_x0()::Vector{Float64}
-    return repeat([1.], SYS.nx)
+function make_x0(sys::StateSpace)::Vector{Float64}
+    return repeat([1.], sys.nx)
 end
