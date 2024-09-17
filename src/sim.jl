@@ -19,11 +19,11 @@ function Environment(sys::StateSpace{<:Discrete})
 end
 
 """
-    step(env, action)
+    step!(env, action)
 
 Simulate the plant's dynamics for one step, according to the action `action` (true for hitting the deadline, false for missing it).
 """
-function step(env::Environment, action::Bool)
+function step!(env::Environment, action::Bool)
     env.state = if action
         env.sys.A * env.state - env.sys.B * env.K * env.state
     else
@@ -40,7 +40,7 @@ end
 Simulate the environment for `H` steps using policy `π`.
 Returns two vectors containing the states and rewards for each step.
 """
-function sim(env::Environment, π::Function, H::Int)
+function sim!(env::Environment, π::Function, H::Int)
     states = Vector{Vector{Float64}}(undef, H + 1)
     rewards = Vector{Float64}(undef, H + 1)
     
@@ -49,7 +49,7 @@ function sim(env::Environment, π::Function, H::Int)
     
     for t in 1:H
         action = π(states[t], rewards[t])
-        states[t + 1], rewards[t + 1] = step(env, action)
+        states[t + 1], rewards[t + 1] = step!(env, action)
     end
     
     return stack(states), rewards

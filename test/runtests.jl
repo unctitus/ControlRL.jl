@@ -1,5 +1,4 @@
 using Test
-using Plots
 using ControlRL
 
 @testset "ControlRL.jl" begin
@@ -10,7 +9,7 @@ using ControlRL
     H = 100
     s, r = state(env), reward(env)
     for t in 1:H
-        s, r = step(env, true)
+        s, r = step!(env, true)
     end
 
     # Equivalent to `@test isapprox(state, zeros(size(state)), atol=1e-5)`
@@ -18,7 +17,7 @@ using ControlRL
     @test r ≈ 0.0 atol=1e-5
 
     env2 = Environment(sys)
-    states, rewards = sim(env2, (s, r) -> true, H)
+    states, rewards = sim!(env2, (s, r) -> true, H)
 
     @test states[:, end] == s
     @test rewards[end] == r
