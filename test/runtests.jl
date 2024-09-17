@@ -1,20 +1,24 @@
-using ControlRL
 using Test
-using Plots
+using ControlRL
 
 @testset "ControlRL.jl" begin
-    x0 = make_x0()
-    x = [x0]
-    for i in 1:100
-        push!(x, sim(x[end], true))
-    end
-    # Equivalent to `@test isapprox(x[end], zeros(size(x[end])), atol=1e-5)`
-    @test x[end] ≈ zeros(size(x[end])) atol=1e-5
-    
-    x_inplace = copy(x0)
-    for i in 1:100
-        sim!(x_inplace, true)
+    T = 0.1
+    sys = c2d(benchmarks[:F1], T)
+    env = Environment(sys)
+
+    H = 100
+    s, r = state(env), reward(env)
+    for t in 1:H
+        s, r = step!(env, true)
     end
 
-    @test x_inplace == x[end]
+    # Equivalent to `@test isapprox(state, zeros(size(state)), atol=1e-5)`
+    @test s ≈ zeros(size(s)) atol=1e-5
+    @test r ≈ 0.0 atol=1e-5
+
+    env2 = Environment(sys)
+    states, rewards = sim!(env2, (s, r) -> true, H)
+
+    @test states[:, end] == s
+    @test rewards[end] == r
 end

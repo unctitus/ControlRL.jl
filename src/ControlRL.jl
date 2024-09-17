@@ -1,6 +1,9 @@
 module ControlRL
 
-export sim, sim!, make_x0
+export Environment, step!, state, reward, sim!
 include("sim.jl")
+
+export benchmarks, c2d
+include("models.jl")
 
 end
