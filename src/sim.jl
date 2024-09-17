@@ -43,16 +43,19 @@ Returns two vectors containing the states and rewards for each step.
 function sim!(env::Environment, π::Function, H::Int)
     states = Vector{Vector{Float64}}(undef, H + 1)
     rewards = Vector{Float64}(undef, H + 1)
+    ideal_states = Vector{Vector{Float64}}(undef, H + 1)
     
     states[1] = env.state
     rewards[1] = reward(env)
+    ideal_states[1] = env.ideal_state
     
     for t in 1:H
         action = π(states[t], rewards[t])
         states[t + 1], rewards[t + 1] = step!(env, action)
+        ideal_states[t + 1] = env.ideal_state
     end
     
-    return stack(states), rewards
+    return stack(states), rewards, stack(ideal_states)
 end
 
 """
