@@ -6,7 +6,7 @@ mutable struct Environment
     sys::StateSpace{<:Discrete}
     K::Matrix{Float64}
     state::Vector{Float64}
-    state_ideal::Vector{Float64}
+    ideal_state::Vector{Float64}
 end
 
 """
@@ -29,9 +29,9 @@ function step(env::Environment, action::Bool)
     else
         env.sys.A * env.state
     end
-    env.state_ideal = env.sys.A * env.state - env.sys.B * env.K * env.state
+    env.ideal_state = env.sys.A * env.ideal_state - env.sys.B * env.K * env.ideal_state
 
-    return state(env), reward(env)
+    return env.state, reward(env)
 end
 
 """
@@ -44,7 +44,7 @@ function sim(env::Environment, π::Function, H::Int)
     states = Vector{Vector{Float64}}(undef, H + 1)
     rewards = Vector{Float64}(undef, H + 1)
     
-    states[1] = state(env)
+    states[1] = env.state
     rewards[1] = reward(env)
     
     for t in 1:H
@@ -70,7 +70,7 @@ end
 Calculate the reward for the given environment at the current step.
 """
 function reward(env::Environment)
-    return -norm(env.state - env.state_ideal)
+    return -norm(env.state - env.ideal_state)
 end
 
 """
