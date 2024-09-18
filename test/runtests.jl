@@ -17,8 +17,9 @@ using ControlRL
     @test r ≈ 0.0 atol=1e-5
 
     env2 = Environment(sys)
-    states, rewards = sim!(env2, (s, r) -> true, H)
+    actions, states, rewards = sim!(env2, (a, s, r) -> true, H)
 
+    @test actions == fill(true, H)
     @test states[:, end] == s
     @test rewards[end] == r
 end

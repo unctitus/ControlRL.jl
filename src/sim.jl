@@ -35,12 +35,13 @@ function step!(env::Environment, action::Bool)
 end
 
 """
-    sim(env, π, H)
+    sim!(env, π, H)
 
 Simulate the environment for `H` steps using policy `π`.
-Returns two vectors containing the states and rewards for each step.
+Returns vectors containing the actions, states, rewards, and ideal states, respectively.
 """
-function sim!(env::Environment, π::Function, H::Int)
+function sim!(env::Environment, π::Function, H::Integer)
+    actions = Vector{Bool}(undef, H)
     states = Vector{Vector{Float64}}(undef, H + 1)
     rewards = Vector{Float64}(undef, H + 1)
     ideal_states = Vector{Vector{Float64}}(undef, H + 1)
@@ -50,12 +51,12 @@ function sim!(env::Environment, π::Function, H::Int)
     ideal_states[1] = env.ideal_state
     
     for t in 1:H
-        action = π(states[t], rewards[t])
-        states[t + 1], rewards[t + 1] = step!(env, action)
+        actions[t] = π(actions[1:t-1], states[1:t], rewards[1:t])
+        states[t + 1], rewards[t + 1] = step!(env, actions[t])
         ideal_states[t + 1] = env.ideal_state
     end
     
-    return stack(states), rewards, stack(ideal_states)
+    return actions, stack(states), rewards, stack(ideal_states)
 end
 
 """
@@ -81,6 +82,6 @@ end
 
 A convenience function that returns an initial state with the correct dimensions for the plant.
 """
-function make_x0(sys::StateSpace)::Vector{Float64}
+function make_x0(sys::StateSpace)
     return repeat([1.], sys.nx)
 end
