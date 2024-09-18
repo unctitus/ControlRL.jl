@@ -33,7 +33,7 @@ The reference policy π₀ is defined as meeting all deadlines:
 """
 
 # ╔═╡ 2fd32b80-1d52-4a97-8dab-46f1278ebc58
-π₀(states::Vector{Vector{Float64}}, rewards::Vector{Float64})::Bool = true
+π₀(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64}) = true
 
 # ╔═╡ 05117c1b-a715-44f4-9f98-c7fbca48ce30
 md"""
@@ -71,11 +71,11 @@ md"""
 
 	Some of the policies are defined with the [compact function declaration syntax](https://docs.julialang.org/en/v1/manual/functions/#man-functions), which is equivalent to the normal syntax. I.e., the following two declarations are equivalent:
 	```julia
-	π₀(states::Vector{Vector{Float64}}, rewards::Vector{Float64})::Bool = true
+	π₀(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64}) = true
 	```
 	and
 	```julia
-	function π₀(states::Vector{Vector{Float64}}, rewards::Vector{Float64})::Bool
+	function π₀(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64})
 		return true
 	end
 	```
