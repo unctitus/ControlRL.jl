@@ -9,11 +9,13 @@ begin
 	import Pkg
 	Pkg.activate(".")
 	Pkg.instantiate()
-	push!(LOAD_PATH, "$(@__DIR__)/../src")
-	using ControlRL
+	using Revise
 	using Plots
+	plotlyjs()
 	using LinearAlgebra
 	using PlutoUI
+	push!(LOAD_PATH, "$(@__DIR__)/../src")
+	using ControlRL
 
 	TableOfContents()
 end
@@ -31,21 +33,36 @@ The reference policy π₀ is defined as meeting all deadlines:
 """
 
 # ╔═╡ 2fd32b80-1d52-4a97-8dab-46f1278ebc58
-π₀(state::Vector{Float64}, reward::Float64)::Bool = true
+π₀(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64}) = true
 
 # ╔═╡ 05117c1b-a715-44f4-9f98-c7fbca48ce30
 md"""
 **You only need to change the section below.**
 
 Define your own policy here.
-The rewards is currently defined as the negation of distance between current
-state and the state obtained by following the reference policy π₀
+The reward is currently defined as the negation of distance between current
+state and the state obtained by following the reference policy π₀.
+
+Several example policies are provided. Feel free to experiment with one of them,
+combine two or more of them, or experiment with your own policies!
 """
 
 # ╔═╡ fac6522b-c189-4b7c-be35-11d038a854bc
-function π(state::Vector{Float64}, reward::Float64)::Bool
-	# For example, return true when the distance to reference is greater than 1
-	return reward <= -1
+"""
+	π(actions, states, rewards)
+
+The policy π decides the action (deadline hit/miss) based on the history of
+past actions, states, and rewards. It returns a single true/false value.
+"""
+function π(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64})
+	## Example 1: return true when the distance to reference is greater than 1
+	# return rewards[end] <= -1
+	
+	## Example 2: return true when the distance increase consecutively for 3 steps
+	# return length(rewards) > 2 && (rewards[end-2] > rewards[end-1] > rewards[end])
+
+	## Example 3: return true when the utilization up to now is less than 0.5
+	return length(actions) > 0 && (sum(actions) / length(actions) < 0.5)
 end
 
 # ╔═╡ 8015eee9-cfe9-4890-a3a5-e3f97517d1d2
@@ -54,11 +71,11 @@ md"""
 
 	Some of the policies are defined with the [compact function declaration syntax](https://docs.julialang.org/en/v1/manual/functions/#man-functions), which is equivalent to the normal syntax. I.e., the following two declarations are equivalent:
 	```julia
-	π₀(state::Vector{Float64}, reward::Float64)::Bool = true
+	π₀(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64}) = true
 	```
 	and
 	```julia
-	function π₀(state::Vector{Float64}, reward::Float64)::Bool
+	function π₀(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vector{Float64})
 		return true
 	end
 	```
@@ -77,28 +94,34 @@ Define the sampling period $T$ and time horizon $H$
 const T = 0.02
 
 # ╔═╡ 837c7cf2-66cb-4ebe-a417-df1e5da9cc73
-const H = 100
+const H = 500
 
 # ╔═╡ 2fee3edd-bba5-4738-a43c-691c9b4cf3de
 md"""
-Initiate the simulation environment
+Display all available models.
+"""
+
+# ╔═╡ 64bf8494-2e6c-4ad7-bffa-cf4a6ae74456
+benchmarks
+
+# ╔═╡ 84f2e971-241e-4895-9daf-18a65de77ea5
+md"""
+Convert a chosen model from continuous to discrete form using sampling period $T$ = $T
 """
 
 # ╔═╡ a274cbd6-13c3-499f-8407-41211e25dae1
-sys = c2d(benchmarks[:F1], T)
+sys = c2d(benchmarks[:CC], T)
 
-# ╔═╡ 4f63bf67-8208-4742-8dee-aa3186c8d658
-env = let π
-	Environment(sys)
-end
-
-# ╔═╡ e8e8964c-c829-4ba4-8cbb-230eec2faffa
+# ╔═╡ 4730f9cd-493d-42ea-9006-013a746a149f
 md"""
-Simulate the system for $H$ steps
+Initiate the simulation environment and Simulate the system for $H$ steps.
 """
 
 # ╔═╡ cbd51753-b04a-40c9-8f5b-9b88c74fc6f7
-states, rewards, ideal_states = sim!(env, π, H)
+actions, states, rewards, ideal_states = let 
+	env = Environment(sys)
+	sim!(env, π, H)
+end
 
 # ╔═╡ 09e3258a-a3fe-43a0-8f65-0d4a13b5c513
 md"""
@@ -163,13 +186,14 @@ plotH(rewards)
 # ╠═311337a7-9402-4ade-8707-e9ba9b72fa3b
 # ╠═837c7cf2-66cb-4ebe-a417-df1e5da9cc73
 # ╟─2fee3edd-bba5-4738-a43c-691c9b4cf3de
+# ╠═64bf8494-2e6c-4ad7-bffa-cf4a6ae74456
+# ╟─84f2e971-241e-4895-9daf-18a65de77ea5
 # ╠═a274cbd6-13c3-499f-8407-41211e25dae1
-# ╠═4f63bf67-8208-4742-8dee-aa3186c8d658
-# ╟─e8e8964c-c829-4ba4-8cbb-230eec2faffa
+# ╟─4730f9cd-493d-42ea-9006-013a746a149f
 # ╠═cbd51753-b04a-40c9-8f5b-9b88c74fc6f7
 # ╟─09e3258a-a3fe-43a0-8f65-0d4a13b5c513
 # ╠═45b657ae-6220-44b3-aa35-cae27bf730b0
-# ╠═eb39929a-46b6-4d53-a3e9-30af17500b54
+# ╟─eb39929a-46b6-4d53-a3e9-30af17500b54
 # ╠═19634c38-ec2c-45a0-862a-3f92beecb5a1
 # ╟─d9b853f3-4f79-487e-98ef-2f1b321b9d69
 # ╠═66fbe369-33e7-409f-ae66-29c1984518b3
