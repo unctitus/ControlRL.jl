@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ 04f3e318-6489-11ef-1ccc-89d0ed2d1029
 begin
 	import Pkg
@@ -16,7 +26,6 @@ begin
 	using PlutoUI
 	push!(LOAD_PATH, "$(@__DIR__)/../src")
 	using ControlRL
-
 	TableOfContents()
 end
 
@@ -62,7 +71,55 @@ function π(actions::Vector{Bool}, states::Vector{Vector{Float64}}, rewards::Vec
 	# return length(rewards) > 2 && (rewards[end-2] > rewards[end-1] > rewards[end])
 
 	## Example 3: return true when the utilization up to now is less than 0.5
-	return length(actions) > 0 && (sum(actions) / length(actions) < 0.5)
+	#return length(actions) > 0 && (sum(actions) / length(actions) > 0.2)
+
+	#Idea 1
+	#Execute either if the out of 80% of the safety margin (100) or if utilization rate is below 0.38 
+	safety_margin = 20
+	util_rate = length(actions) > 0 ?  sum(actions) / length(actions) : 0
+	#return (-rewards[end] > 0.8 * safety_margin || util_rate < 0.38) ? true : false
+	
+	#Results
+	#Works for:  CC, RC, DC, F1, CS, MPC
+	#Does not work for:  EW
+	#Oberservation: util rate can be used to limit divergence 
+	#if the util rate is below 0.25 it still diverges constantly
+	#if the util rate is 0.38. Good Convergence
+    
+	
+	#Idea 2: Idea 1, but only utilization 
+	#return util_rate < 0.15 ? true : false
+
+	#Idea 3: Idea 1, but only safty margin
+    #return -rewards[end] > 0.8 * safety_margin  ? true : false
+
+	#Idea 4: 
+	#k = 1
+	#r1 = length(rewards) >= k && any(-rewards[end-i] > 0.8 * safety_margin for i in 0:k-1)
+   	#return r1 ? true : false
+	#Obeservation: k=4 helps to reduce utilization a little bit but otherwise setting a higher k is uselese and worsen the utilization 
+
+	#Idea 5: Execute the job with a proability proportinal to the distance of the optimal trajectory.
+
+	#return rand() <= min(-rewards[end], safety_margin)/safety_margin ? true : false
+	
+	#return rand() <= sig_prob(-rewards[end], safety_margin) ? true : false
+
+	
+	return false
+	
+	
+	#Questions: What would be meaningful safeyt margin for each system? Or just assume any? 
+	#Optimal Strategy: Minimum utilization rate while not leaving the safety margins.
+	
+	#r1 = length(rewards) > 2 && (rewards[end-2] > rewards[end-1] > rewards[end])
+	#r2 = rewards[end] < -0.8 * safety_margin
+	
+	#return (-rewards[end] > 0.2 * safety_margin) ? true : false
+	#return (r1 || r2 || util_rate < 0.6) ? true : false
+
+	#another idea: try out a sampling approach 
+
 end
 
 # ╔═╡ 8015eee9-cfe9-4890-a3a5-e3f97517d1d2
@@ -94,7 +151,7 @@ Define the sampling period $T$ and time horizon $H$
 const T = 0.02
 
 # ╔═╡ 837c7cf2-66cb-4ebe-a417-df1e5da9cc73
-const H = 500
+const H = 1200
 
 # ╔═╡ 2fee3edd-bba5-4738-a43c-691c9b4cf3de
 md"""
@@ -110,7 +167,7 @@ Convert a chosen model from continuous to discrete form using sampling period $T
 """
 
 # ╔═╡ a274cbd6-13c3-499f-8407-41211e25dae1
-sys = c2d(benchmarks[:CC], T)
+sys = c2d(benchmarks[:CS], T)
 
 # ╔═╡ 4730f9cd-493d-42ea-9006-013a746a149f
 md"""
@@ -136,6 +193,12 @@ md"""
 Plot the trajectory of system dynamics following the reference policy.
 """
 
+# ╔═╡ 9fe9173a-a458-4d3e-ac8f-1b4443dd4efc
+begin
+	#@bind safety_margin Slider(10:1:200, show_value=true)
+	#safety_margin = 1000
+end
+
 # ╔═╡ d9b853f3-4f79-487e-98ef-2f1b321b9d69
 md"""
 Plot the trajectory of system dynamics following the defined policy.
@@ -145,6 +208,12 @@ Plot the trajectory of system dynamics following the defined policy.
 md"""
 Plot the rewards (distance to the reference trajectory).
 """
+
+# ╔═╡ e2c486a5-f734-4d24-893b-470e099180e3
+@bind s Slider(0:0.1:6, show_value=true)
+
+# ╔═╡ 0ec39f15-aec2-4bd3-9847-d39ba9384588
+@bind k Slider(0:0.1:6, default=1, show_value=true)
 
 # ╔═╡ e705f0df-bdcc-4673-976f-5d096c6a2abc
 md"""
@@ -160,6 +229,8 @@ Plot the system states as recorded in states matrix.
 function plotH(states::Matrix{Float64})
 	# Transposing `states` because plot uses the first dimension as indices.
 	plot(0:size(states, 2) - 1, states')
+	#hline!([-20], label="y = -20", linestyle=:dash, color=:red)
+
 end
 
 # ╔═╡ c34375b4-70ab-4468-9186-c43948f22a7a
@@ -173,6 +244,58 @@ plotH(states)
 
 # ╔═╡ 7c54f79a-6bb4-4190-ab13-bca71bb868a8
 plotH(rewards)
+
+# ╔═╡ 70814015-d5b6-4a01-afeb-090d2aa40681
+
+"""
+	plot_utilization(actions::Vector{Bool})
+
+Plots the utilization over time based on the actions array.
+"""
+function plot_utilization(actions::Vector{Bool})
+	
+	# Calculate utilization
+	utilization = cumsum(Int.(actions)) ./ (1:length(actions))
+	
+	# Plot the utilization over time
+	plot(0:length(actions)-1, utilization, label="Utilization", xlabel="Time Steps", ylabel="Utilization", title="Utilization Over Time", legend=:topright)
+end
+
+# Example usage
+#actions2 = [false, true, true, false, true, false, false, true]
+#plot_utilization(actions2)
+	
+
+# ╔═╡ 35e9c74e-ef57-43d6-97e1-f7b4c6206b59
+plot_utilization(actions)
+
+# ╔═╡ 44a9be8a-c9c8-49a8-bfaf-f81aa05d5516
+function sig_prob(value, safety_margin)
+    x_min = 0
+    x_max = safety_margin
+    y_min = -10
+    y_max = 10
+	value = min(value, safety_margin)
+    # Linear mapping
+    mapped_value = (value - x_min) * ((y_max - y_min) / (x_max - x_min)) + y_min
+    #return 1 / (1 + exp(-mapped_value))
+	return 1 / (1 + exp(-(mapped_value - s) * k))
+end
+
+# ╔═╡ 2114c3d9-6e3b-4468-a27e-aa05a40df626
+begin
+	### Define the sigmoid function ###
+	sigmoid(x, k, s) = 1 / (1 + exp(-(x - s) * k))
+	
+	### Create a range of x values ###
+	x = -10:0.1:10
+	
+	### Compute the sigmoid values based on the interactive k ###
+	y = sigmoid.(x, k, s)
+	
+	### Plot the sigmoid function ###
+	plot(x, y, xlabel="x", ylabel="σ(x)", lw=2)
+end
 
 # ╔═╡ Cell order:
 # ╟─abb82687-12f0-4754-b3dd-49c03f3c9ad1
@@ -194,11 +317,18 @@ plotH(rewards)
 # ╟─09e3258a-a3fe-43a0-8f65-0d4a13b5c513
 # ╠═45b657ae-6220-44b3-aa35-cae27bf730b0
 # ╟─eb39929a-46b6-4d53-a3e9-30af17500b54
+# ╠═9fe9173a-a458-4d3e-ac8f-1b4443dd4efc
 # ╠═19634c38-ec2c-45a0-862a-3f92beecb5a1
 # ╟─d9b853f3-4f79-487e-98ef-2f1b321b9d69
 # ╠═66fbe369-33e7-409f-ae66-29c1984518b3
 # ╟─ad589207-0f42-446a-b3d6-167a54c02950
 # ╠═7c54f79a-6bb4-4190-ab13-bca71bb868a8
+# ╠═35e9c74e-ef57-43d6-97e1-f7b4c6206b59
+# ╠═e2c486a5-f734-4d24-893b-470e099180e3
+# ╠═0ec39f15-aec2-4bd3-9847-d39ba9384588
 # ╟─e705f0df-bdcc-4673-976f-5d096c6a2abc
 # ╠═5402045e-83ef-4b90-9f14-1796fdadacc0
 # ╠═c34375b4-70ab-4468-9186-c43948f22a7a
+# ╠═70814015-d5b6-4a01-afeb-090d2aa40681
+# ╠═44a9be8a-c9c8-49a8-bfaf-f81aa05d5516
+# ╠═2114c3d9-6e3b-4468-a27e-aa05a40df626
